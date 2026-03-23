@@ -7,38 +7,34 @@ Run the setup script:
 ~/Work/WhisperSetup/setup-whisper.sh
 ```
 
-## Commands
+## Waybar Integration
 
-### Server (port 4242)
+After setup, add this to your waybar config:
+```json
+"custom/whisper": {
+    "format": "{}",
+    "exec": "$HOME/.local/bin/whisper-status.sh",
+    "exec-if": "true",
+    "on-click": "$HOME/.local/bin/whisper-toggle.sh",
+    "return-type": "json"
+}
+```
+
+Click the whisper icon in waybar to toggle the server on/off.
+
+## Manual Commands
+
 ```bash
 ~/.local/bin/whisper-server-ctl start   # Start server
-~/.local/bin/whisper-server-ctl stop    # Stop server
-~/.local/bin/whisper-server-ctl status  # Check status
-```
-
-### Local Transcription
-```bash
-~/.local/bin/whisper-ctl transcribe /path/to/audio.mp3
-```
-
-### Menu
-```bash
-~/.local/bin/whisper-menu
+~/.local/bin/whisper-server-ctl stop     # Stop server
+~/.local/bin/whisper-server-ctl status   # Check status
 ```
 
 ## Network Access
 
-Once the server is running, access from other computers:
+Once running, access from other computers:
 ```bash
-# Get the server IP: ~/.local/bin/whisper-server-ctl status
-
-# Transcribe a file
 curl -X POST -F "audio_file=@audio.mp3" http://<SERVER_IP>:4242/inference
-
-# Or use the web interface
-# Open http://<SERVER_IP>:4242 in a browser
 ```
 
-## Model Location
-- Model: `~/whisper-models/whisper-large-v3-turbo.bin`
-- Downloaded from: https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin
+Server runs on port 4242.

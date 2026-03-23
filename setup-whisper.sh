@@ -30,6 +30,9 @@ if [ ! -f "$BIN_DIR/whisper-cli" ]; then
     cd whisper.cpp
     cmake -B build -DBUILD_SHARED_LIBS=ON
     cmake --build build --config Release -j$(nproc)
+    mkdir -p "$BIN_DIR/lib"
+    cp build/src/*.so* "$BIN_DIR/lib/" 2>/dev/null || true
+    cp build/ggml/src/*.so* "$BIN_DIR/lib/" 2>/dev/null || true
     cp build/bin/whisper-cli "$BIN_DIR/"
     cp build/bin/whisper-server "$BIN_DIR/"
     chmod +x "$BIN_DIR/whisper-cli" "$BIN_DIR/whisper-server"
@@ -49,8 +52,15 @@ else
     echo "[2/6] Model already present"
 fi
 
-# Step 3: Create whisper-ctl script
-echo "[3/6] Creating whisper-ctl script..."
+# Step 3: Create whisper-status.sh and whisper-toggle.sh for waybar
+echo "[3/7] Creating waybar control scripts..."
+cp "$WORK_DIR/whisper-status.sh" "$BIN_DIR/"
+cp "$WORK_DIR/whisper-toggle.sh" "$BIN_DIR/"
+chmod +x "$BIN_DIR/whisper-status.sh" "$BIN_DIR/whisper-toggle.sh"
+echo "  ✓ waybar scripts created"
+
+# Step 4: Create whisper-ctl script
+echo "[4/7] Creating whisper-ctl script..."
 cat > "$BIN_DIR/whisper-ctl" << 'SCRIPT_EOF'
 #!/bin/bash
 
@@ -109,7 +119,7 @@ chmod +x "$BIN_DIR/whisper-ctl"
 echo "  ✓ whisper-ctl created"
 
 # Step 4: Create whisper-server-ctl script
-echo "[4/6] Creating whisper-server-ctl script..."
+echo "[4/7] Creating whisper-server-ctl script..."
 cat > "$BIN_DIR/whisper-server-ctl" << 'SERVER_EOF'
 #!/bin/bash
 
@@ -169,7 +179,7 @@ chmod +x "$BIN_DIR/whisper-server-ctl"
 echo "  ✓ whisper-server-ctl created"
 
 # Step 5: Create whisper-menu script
-echo "[5/6] Creating whisper-menu script..."
+echo "[5/7] Creating whisper-menu script..."
 cat > "$BIN_DIR/whisper-menu" << 'MENU_EOF'
 #!/bin/bash
 
@@ -302,7 +312,7 @@ chmod +x "$BIN_DIR/whisper-menu"
 echo "  ✓ whisper-menu created"
 
 # Step 6: Verify waybar config
-echo "[6/6] Configuring waybar..."
+echo "[6/7] Configuring waybar..."
 CONFIG_FILE="$HOME/.config/waybar/config.jsonc"
 
 # Check if whisper is in the tray group
@@ -312,13 +322,34 @@ else
     echo "  ! Waybar needs manual configuration"
 fi
 
+# Step 7: Add waybar config if not present
+echo "[7/7] Adding waybar custom module..."
+WAYBAR_MODULE='"custom/whisper": {
+    "format": "{}", 
+    "exec": "$HOME/.local/bin/whisper-status.sh",
+    "exec-if": "true",
+    "on-click": "$HOME/.local/bin/whisper-toggle.sh",
+    "return-type": "json"
+}'
+
+if [ -f "$CONFIG_FILE" ]; then
+    if ! grep -q 'custom/whisper' "$CONFIG_FILE"; then
+        echo "$WAYBAR_MODULE," >> "$CONFIG_FILE"
+        echo "  ✓ Added whisper custom module to waybar"
+    fi
+fi
+
 echo ""
 echo "=== Setup Complete ==="
 echo ""
-echo "Server is running on: http://$(get_ip):$PORT"
-echo ""
 echo "Usage:"
-echo "  ~/.local/bin/whisper-server-ctl start   # Start server"
-echo "  ~/.local/bin/whisper-server-ctl stop    # Stop server"
-echo "  ~/.local/bin/whisper-ctl transcribe <file>  # Transcribe"
-echo "  ~/.local/bin/whisper-menu               # Open menu"
+echo "  ~/.local/bin/whisper-status.sh           # Waybar status script"
+echo "  ~/.local/bin/whisper-toggle.sh           # Waybar toggle script (click to toggle)"
+echo "  ~/.local/bin/whisper-server-ctl start    # Start server manually"
+echo "  ~/.local/bin/whisper-server-ctl stop     # Stop server manually"
+
+if command -v omarchy-restart-waybar &>/dev/null; then
+    echo ""
+    echo "Restarting waybar..."
+    omarchy-restart-waybar
+fi

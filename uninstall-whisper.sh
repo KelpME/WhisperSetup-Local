@@ -12,7 +12,7 @@ echo "=== Whisper Uninstall ==="
 echo ""
 
 stop_services() {
-    echo "[1/5] Stopping services..."
+    echo "[1/6] Stopping services..."
     if [ -f "$BIN_DIR/whisper-server-ctl" ]; then
         "$BIN_DIR/whisper-server-ctl" stop 2>/dev/null || true
     fi
@@ -25,14 +25,17 @@ stop_services() {
 }
 
 remove_binaries() {
-    echo "[2/5] Removing binaries..."
+    echo "[2/6] Removing binaries..."
     rm -f "$BIN_DIR/whisper-cli" "$BIN_DIR/whisper-server"
     rm -f "$BIN_DIR/whisper-ctl" "$BIN_DIR/whisper-server-ctl" "$BIN_DIR/whisper-menu"
+    rm -f "$BIN_DIR/whisper-status.sh" "$BIN_DIR/whisper-toggle.sh"
+    rm -f "$BIN_DIR/whisper-status" "$BIN_DIR/whisper-toggle"
+    rm -rf "$BIN_DIR/lib"
     echo "  ✓ Binaries removed"
 }
 
 remove_models() {
-    echo "[3/5] Removing models..."
+    echo "[3/6] Removing models..."
     if [ -d "$MODEL_DIR" ]; then
         read -p "Remove model directory ($MODEL_DIR)? [y/N] " -n 1 -r
         echo
@@ -48,13 +51,22 @@ remove_models() {
 }
 
 remove_config() {
-    echo "[4/5] Removing configuration..."
+    echo "[4/6] Removing configuration..."
     rm -f "$CONFIG_FILE"
     echo "  ✓ Config removed"
 }
 
+remove_waybar_config() {
+    echo "[5/6] Removing waybar config..."
+    WAYBAR_CONFIG="$HOME/.config/waybar/config.jsonc"
+    if [ -f "$WAYBAR_CONFIG" ]; then
+        sed -i '/"custom\/whisper"/,/}/d' "$WAYBAR_CONFIG"
+        echo "  ✓ Waybar config removed"
+    fi
+}
+
 remove_whisper_cpp() {
-    echo "[5/5] Removing whisper.cpp source..."
+    echo "[6/6] Removing whisper.cpp source..."
     if [ -d /tmp/whisper.cpp ]; then
         read -p "Remove whisper.cpp source (/tmp/whisper.cpp)? [y/N] " -n 1 -r
         echo
@@ -72,6 +84,7 @@ remove_whisper_cpp() {
 echo "This will remove:"
 echo "  - Whisper binaries ($BIN_DIR/whisper-*)"
 echo "  - Configuration ($CONFIG_FILE)"
+echo "  - Waybar config"
 echo ""
 read -p "Continue? [y/N] " -n 1 -r
 echo
@@ -81,9 +94,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     remove_binaries
     remove_models
     remove_config
+    remove_waybar_config
     remove_whisper_cpp
     echo ""
     echo "=== Uninstall Complete ==="
+    
+    if command -v omarchy-restart-waybar &>/dev/null; then
+        echo "Restarting waybar..."
+        omarchy-restart-waybar
+    fi
 else
     echo "Cancelled."
 fi
