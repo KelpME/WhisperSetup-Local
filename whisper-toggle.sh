@@ -15,9 +15,13 @@ get_ip() {
 }
 
 if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-    kill "$(cat "$PID_FILE")" 2>/dev/null
-    rm -f "$PID_FILE"
-    notify-send "Whisper" "Server stopped"
+    if curl -sf "http://localhost:$PORT" >/dev/null 2>&1; then
+        kill "$(cat "$PID_FILE")" 2>/dev/null
+        rm -f "$PID_FILE"
+        notify-send "Whisper" "Server stopped"
+    else
+        notify-send "Whisper" "Server not responding on port $PORT"
+    fi
 else
     nohup "$BIN_DIR/whisper-server" \
         -m "$MODEL_PATH" \

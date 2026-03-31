@@ -325,11 +325,12 @@ fi
 # Step 7: Add waybar config if not present
 echo "[7/7] Adding waybar custom module..."
 WAYBAR_MODULE='"custom/whisper": {
-    "format": "{}", 
+    "format": "{}",
+    "spacing": 0,
+    "return-type": "json",
     "exec": "$HOME/.local/bin/whisper-status.sh",
-    "exec-if": "true",
-    "on-click": "$HOME/.local/bin/whisper-toggle.sh",
-    "return-type": "json"
+    "interval": 5,
+    "on-click": "$HOME/.local/bin/whisper-toggle.sh"
 }'
 
 if [ -f "$CONFIG_FILE" ]; then
